@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transcripción de Audio</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="container">
+        <h1>Transcripción de Audio con Confianza</h1>
+        <input type="file" id="audioInput" accept="audio/*" />
+        <button id="transcribeBtn">Transcribir</button>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000/transcribe"; // Adjust if running elsewhere
+        const confidenceThreshold = 0.8; // below this -> low confidence
+
+        document.getElementById("transcribeBtn").addEventListener("click", async () => {
+            const fileInput = document.getElementById("audioInput");
+            if (!fileInput.files.length) {
+                alert("Selecciona un archivo de audio.");
+                return;
+            }
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append("file", file);
+            try {
+                const resp = await fetch(API_URL, {
+                    method: "POST",
+                    body: formData,
+                });
+                if (!resp.ok) throw new Error("Error en la API: " + resp.status);
+                const data = await resp.json();
+                displayResult(data);
+            } catch (err) {
+                console.error(err);
+                alert(err.message);
+            }
+        });
+
+        function displayResult(data) {
+            const container = document.getElementById("result");
+            container.innerHTML = "";
+            if (!data.words) {
+                container.textContent = data.text || "Sin transcripción";
+                return;
+            }
+            data.words.forEach(wordObj => {
+                const span = document.createElement("span");
+                span.textContent = wordObj.word + " ";
+                if (wordObj.confidence < confidenceThreshold) {
+                    span.classList.add("low-confidence");
+                }
+                container.appendChild(span);
+            });
+        }
+    </script>
+</body>
+</html>

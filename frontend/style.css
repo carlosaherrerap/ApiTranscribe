@@ -1,0 +1,75 @@
+/* style.css */
+/* Dark mode with glassmorphism effect */
+:root {
+    --bg-color: #0f0f0f;
+    --container-bg: rgba(255, 255, 255, 0.1);
+    --text-color: #e0e0e0;
+    --accent-color: #4f46e5; /* Indigo */
+    --low-conf-color: #ff4d4d; /* Red for low confidence */
+    --font-family: 'Inter', sans-serif;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    background: var(--container-bg);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+input[type="file"] {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+button {
+    background: var(--accent-color);
+    color: #fff;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background: #3730a3; /* darker indigo */
+}
+
+.result {
+    margin-top: 1.5rem;
+    text-align: left;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.low-confidence {
+    background-color: var(--low-conf-color);
+    color: #fff;
+    padding: 0 2px;
+    border-radius: 3px;
+}
