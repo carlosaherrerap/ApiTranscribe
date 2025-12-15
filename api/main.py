@@ -15,6 +15,12 @@ from .transcribe import transcribe_with_confidence
 
 app = FastAPI(title="Audio Transcription API")
 
+# Root endpoint providing a simple health check
+@app.get("/")
+async def root():
+    return {"message": "Audio Transcription API is running. Use /transcribe to POST audio files."}
+
+
 # Allow frontend (served from same origin or different) to access API
 app.add_middleware(
     CORSMiddleware,

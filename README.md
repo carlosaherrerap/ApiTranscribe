@@ -29,7 +29,7 @@ apiTranscription/
 
 ## Running the API
 ```bash
-uvicorn api.main:app --reload
+uvicorn api.main:app --reload --port 8006
 ```
 The server will start at `http://127.0.0.1:8000`.
 
