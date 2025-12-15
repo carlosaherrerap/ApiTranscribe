@@ -1,62 +1,116 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Transcripción de Audio</title>
     <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
     <div class="container">
         <h1>Transcripción de Audio con Confianza</h1>
-        <input type="file" id="audioInput" accept="audio/*" />
+        <input type="file" id="audioInput" accept="audio/*" multiple />
         <button id="transcribeBtn">Transcribir</button>
-        <div id="result" class="result"></div>
+        <button id="micBtn">Grabación con Micrófono</button>
+        <div id="results" class="results"></div>
     </div>
 
     <script>
-        const API_URL = "http://127.0.0.1:8000/transcribe"; // Adjust if running elsewhere
-        const confidenceThreshold = 0.8; // below this -> low confidence
+        const API_URL = "http://127.0.0.1:8000/transcribe";
+        const CONFIDENCE_THRESHOLD = {
+            high: 0.9,
+            medium: 0.75,
+            low: 0.5
+        };
+        const micBtn = document.getElementById("micBtn");
+        let mediaRecorder;
+        let audioChunks = [];
 
-        document.getElementById("transcribeBtn").addEventListener("click", async () => {
-            const fileInput = document.getElementById("audioInput");
-            if (!fileInput.files.length) {
-                alert("Selecciona un archivo de audio.");
+        micBtn.addEventListener("click", async () => {
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.stop();
+                micBtn.textContent = "Grabación con Micrófono";
                 return;
             }
-            const file = fileInput.files[0];
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+            micBtn.textContent = "Detener Grabación";
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(audioChunks, { type: "audio/webm" });
+                audioChunks = [];
+                await uploadAndTranscribe([blob]);
+            };
+        });
+
+        document.getElementById("transcribeBtn").addEventListener("click", async () => {
+            const files = document.getElementById("audioInput").files;
+            if (!files.length) {
+                alert("Selecciona al menos un archivo de audio.");
+                return;
+            }
+            await uploadAndTranscribe(Array.from(files));
+        });
+
+        async function uploadAndTranscribe(files) {
             const formData = new FormData();
-            formData.append("file", file);
+            files.forEach(f => formData.append("files", f));
+            const resultDiv = document.createElement("div");
+            resultDiv.className = "result-item";
+            resultDiv.innerHTML = `<p>Procesando ${files.length} archivo(s)...</p>`;
+            document.getElementById("results").appendChild(resultDiv);
             try {
                 const resp = await fetch(API_URL, {
                     method: "POST",
-                    body: formData,
+                    body: formData
                 });
-                if (!resp.ok) throw new Error("Error en la API: " + resp.status);
+                if (!resp.ok) throw new Error("Error API: " + resp.status);
                 const data = await resp.json();
-                displayResult(data);
+                renderTranscriptions(data, resultDiv);
             } catch (err) {
                 console.error(err);
-                alert(err.message);
+                resultDiv.innerHTML = `<p class="error">${err.message}</p>`;
             }
-        });
+        }
 
-        function displayResult(data) {
-            const container = document.getElementById("result");
-            container.innerHTML = "";
-            if (!data.words) {
-                container.textContent = data.text || "Sin transcripción";
+        function renderTranscriptions(data, container) {
+            if (!data.transcriptions) {
+                container.innerHTML = `<p class="error">Respuesta inesperada del servidor.</p>`;
                 return;
             }
-            data.words.forEach(wordObj => {
-                const span = document.createElement("span");
-                span.textContent = wordObj.word + " ";
-                if (wordObj.confidence < confidenceThreshold) {
-                    span.classList.add("low-confidence");
+            container.innerHTML = "";
+            data.transcriptions.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "transcription-block";
+                const title = document.createElement("h3");
+                title.textContent = item.filename || "Audio";
+                div.appendChild(title);
+                if (item.error) {
+                    const err = document.createElement("p");
+                    err.className = "error";
+                    err.textContent = "Error: " + item.error;
+                    div.appendChild(err);
+                } else {
+                    const textDiv = document.createElement("p");
+                    item.result.words.forEach(w => {
+                        const span = document.createElement("span");
+                        span.textContent = w.word + " ";
+                        const conf = w.confidence;
+                        if (conf >= CONFIDENCE_THRESHOLD.high) span.classList.add("high-confidence");
+                        else if (conf >= CONFIDENCE_THRESHOLD.medium) span.classList.add("medium-confidence");
+                        else if (conf >= CONFIDENCE_THRESHOLD.low) span.classList.add("low-confidence");
+                        else span.classList.add("very-low-confidence");
+                        textDiv.appendChild(span);
+                    });
+                    div.appendChild(textDiv);
                 }
-                container.appendChild(span);
+                container.appendChild(div);
             });
         }
     </script>
 </body>
+
 </html>
