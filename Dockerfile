@@ -1,1 +1,20 @@
-FROM python:3.11-slim\n\n# Set working directory\nWORKDIR /app\n\n# Install system dependencies (if any)\nRUN apt-get update && apt-get install -y --no-install-recommends gcc libglib2.0-0 && rm -rf /var/lib/apt/lists/*\n\n# Copy requirements and install\nCOPY requirements.txt ./\nRUN pip install --no-cache-dir -r requirements.txt\n\n# Copy application code\nCOPY api/ ./api/\n\n# Expose port (default FastAPI)\nEXPOSE 8000\n\n# Command to run the app\nCMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libglib2.0-0 && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY api/ ./api/
+
+# Expose port (default FastAPI)
+EXPOSE 8000
+
+# Command to run the app
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
